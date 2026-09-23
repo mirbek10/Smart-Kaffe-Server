@@ -6,8 +6,8 @@ test-results/
 artifacts/
 .local/
 bin/
-server
-server.exe
+/server
+/server.exe
 .vite/
 *.tsbuildinfo
 *.log
