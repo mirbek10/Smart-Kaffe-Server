@@ -25,8 +25,9 @@ ADMIN_PASSWORD=<long unique password>
 
 ## Docker
 
-Если backend размещён отдельным GitHub-репозиторием, укажите корень репозитория как build context и используйте `Dockerfile`.
-Если платформа собирает текущий monorepo целиком, используйте `backend/Dockerfile.monorepo` и оставьте build context корнем `koffe`. Ошибка `stat /src/cmd/server: directory not found` означает, что выбран обычный `Dockerfile` при контексте родительской папки.
+Основной `Dockerfile` поддерживает оба варианта build context: корень отдельного backend-репозитория и родительский monorepo `koffe`. После изменения обязательно запустите новый deploy, чтобы платформа взяла свежий Dockerfile.
+
+Для monorepo можно также явно указать `backend/Dockerfile.monorepo` при build context `/`. Ошибка `stat /src/cmd/server: directory not found` в старом логе означает, что собирался Dockerfile до этого исправления.
 
 ```sh
 docker build -t tamak-api .

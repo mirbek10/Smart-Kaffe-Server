@@ -1,9 +1,14 @@
 FROM golang:1.26-alpine AS build
 WORKDIR /src
-COPY go.mod go.sum ./
-RUN go mod download
 COPY . ./
-RUN CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /out/server ./cmd/server && CGO_ENABLED=0 go build -trimpath -o /out/seed ./cmd/seed && CGO_ENABLED=0 go build -trimpath -o /out/admin ./cmd/admin
+RUN set -eux; \
+    if [ -f backend/go.mod ]; then cd backend; fi; \
+    go mod download
+RUN set -eux; \
+    if [ -f backend/go.mod ]; then cd backend; fi; \
+    CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /out/server ./cmd/server; \
+    CGO_ENABLED=0 go build -trimpath -o /out/seed ./cmd/seed; \
+    CGO_ENABLED=0 go build -trimpath -o /out/admin ./cmd/admin
 
 FROM alpine:3.23
 RUN apk add --no-cache ca-certificates tzdata && addgroup -S app && adduser -S -G app -u 10001 app
