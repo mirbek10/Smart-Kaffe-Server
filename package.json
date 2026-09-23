@@ -1,0 +1,14 @@
+{
+  "name": "tamak-backend",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "go run ./cmd/server",
+    "api:dev": "go run ./cmd/server",
+    "admin": "go run ./cmd/admin",
+    "seed": "go run ./cmd/seed",
+    "test": "go test ./...",
+    "test:integration": "go test -tags=integration -count=1 ./internal/server",
+    "build": "go build -o bin/ ./cmd/server"
+  }
+}

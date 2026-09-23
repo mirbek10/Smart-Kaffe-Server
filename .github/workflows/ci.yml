@@ -1,0 +1,33 @@
+name: Backend
+on: [push, pull_request]
+jobs:
+  api:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache-dependency-path: go.sum
+      - name: Start MongoDB replica set
+        run: |
+          docker run -d --name tamak-mongo -p 127.0.0.1:27017:27017 mongo:8.0 --replSet rs0 --bind_ip_all
+          for i in $(seq 1 60); do
+            if docker exec tamak-mongo mongosh --quiet --eval 'db.adminCommand("ping").ok'; then break; fi
+            sleep 1
+          done
+          docker exec tamak-mongo mongosh --quiet --eval 'rs.initiate({_id:"rs0",members:[{_id:0,host:"127.0.0.1:27017"}]})'
+          for i in $(seq 1 60); do
+            if docker exec tamak-mongo mongosh --quiet --eval 'if (!db.hello().isWritablePrimary) quit(1)'; then break; fi
+            sleep 1
+          done
+      - name: Unit, vet and integration
+        env:
+          MONGODB_URI: mongodb://127.0.0.1:27017/?replicaSet=rs0
+          JWT_SECRET: test-only-key-32-characters-long-access
+          JWT_REFRESH_SECRET: test-only-key-32-characters-long-refresh
+          TABLE_TOKEN_SECRET: test-only-key-32-characters-long-table
+        run: |
+          go vet ./...
+          go test -race ./...
+          go test -race -tags=integration -count=1 ./internal/server

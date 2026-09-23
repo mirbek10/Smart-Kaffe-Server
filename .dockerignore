@@ -1,0 +1,17 @@
+**/node_modules
+**/dist
+**/coverage
+**/.env
+**/.env.*
+**/*.log
+**/*.tsbuildinfo
+.git
+.idea
+.vscode
+playwright-report
+test-results
+**/playwright-report
+**/test-results
+artifacts
+.local
+**/bin
