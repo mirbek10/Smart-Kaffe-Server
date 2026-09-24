@@ -147,26 +147,30 @@ func (s *Server) isAllowedOrigin(origin string) bool {
 	if origin == "" {
 		return true
 	}
-	for _, target := range strings.Split(s.Config.FrontendURL, ",") {
-		target = strings.TrimSpace(target)
-		if target != "" && origin == target {
-			return true
-		}
+	origin = strings.TrimRight(strings.TrimSpace(origin), "/")
+	if origin == "" {
+		return true
 	}
 	u, err := url.Parse(origin)
 	if err != nil {
 		return false
 	}
-	host := u.Hostname()
+	host := strings.ToLower(u.Hostname())
+	if (u.Scheme == "https" || u.Scheme == "http") && (host == "smart-kaffe.vercel.app" || (strings.HasPrefix(host, "smart-kaffe") && strings.HasSuffix(host, ".vercel.app"))) {
+		return true
+	}
 	if s.Config.Env != "production" {
 		if host == "localhost" || host == "127.0.0.1" || host == "::1" || strings.HasPrefix(host, "192.168.") || strings.HasPrefix(host, "10.") || strings.HasPrefix(host, "172.") {
 			return true
 		}
 	}
 	for _, target := range strings.Split(s.Config.FrontendURL, ",") {
-		target = strings.TrimSpace(target)
+		target = strings.TrimRight(strings.TrimSpace(target), "/")
+		if target != "" && strings.EqualFold(origin, target) {
+			return true
+		}
 		if fu, err := url.Parse(target); err == nil && fu.Hostname() != "" {
-			if u.Scheme == fu.Scheme && u.Hostname() == fu.Hostname() {
+			if strings.EqualFold(u.Scheme, fu.Scheme) && strings.EqualFold(host, fu.Hostname()) {
 				return true
 			}
 		}

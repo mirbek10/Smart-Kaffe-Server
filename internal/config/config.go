@@ -41,7 +41,7 @@ func Load() (Config, error) {
 	if port == "" {
 		port = get("PORT", "8080")
 	}
-	c := Config{Port: port, Env: get("APP_ENV", "development"), MongoURI: get("MONGODB_URI", "mongodb://localhost:27017/?replicaSet=rs0"), Database: get("MONGODB_DATABASE", "cafe_mvp"), FrontendURL: strings.TrimRight(get("FRONTEND_URL", "http://localhost:5173"), "/"), ConfirmationMinutes: 5}
+	c := Config{Port: port, Env: get("APP_ENV", "development"), MongoURI: get("MONGODB_URI", "mongodb://localhost:27017/?replicaSet=rs0"), Database: get("MONGODB_DATABASE", "cafe_mvp"), FrontendURL: strings.TrimRight(get("FRONTEND_URL", "http://localhost:5173,https://smart-kaffe.vercel.app"), "/"), ConfirmationMinutes: 5}
 	if v := os.Getenv("ORDER_CONFIRMATION_TIMEOUT_MINUTES"); v != "" {
 		n, e := strconv.Atoi(v)
 		if e != nil || n < 1 || n > 60 {

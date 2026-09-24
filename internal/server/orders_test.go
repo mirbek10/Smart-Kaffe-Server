@@ -52,6 +52,9 @@ func TestOriginValidation(t *testing.T) {
 		"http://localhost:5174",
 		"http://127.0.0.1:5174",
 		"http://192.168.1.50:5173",
+		"https://smart-kaffe.vercel.app",
+		"https://smart-kaffe.vercel.app/",
+		"https://smart-kaffe-git-main.vercel.app",
 	}
 	for _, o := range allowed {
 		if !s.isAllowedOrigin(o) {
@@ -61,10 +64,27 @@ func TestOriginValidation(t *testing.T) {
 	disallowed := []string{
 		"https://evil.com",
 		"http://attacker.site:5173",
+		"https://other-kaffe.vercel.app",
 	}
 	for _, o := range disallowed {
 		if s.isAllowedOrigin(o) {
 			t.Errorf("expected origin %q to be rejected", o)
 		}
+	}
+
+	prod := &Server{
+		Config: config.Config{
+			Env:         "production",
+			FrontendURL: "https://smart-kaffe.vercel.app",
+		},
+	}
+	if !prod.isAllowedOrigin("https://smart-kaffe.vercel.app") {
+		t.Error("expected https://smart-kaffe.vercel.app to be allowed in production")
+	}
+	if !prod.isAllowedOrigin("https://smart-kaffe.vercel.app/") {
+		t.Error("expected https://smart-kaffe.vercel.app/ with trailing slash to be allowed in production")
+	}
+	if prod.isAllowedOrigin("http://localhost:5173") {
+		t.Error("expected localhost to be rejected in production without explicit config")
 	}
 }

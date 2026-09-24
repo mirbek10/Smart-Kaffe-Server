@@ -62,7 +62,21 @@ func (s *Server) refreshHash(v string) string {
 	return hex.EncodeToString(h.Sum(nil))
 }
 func (s *Server) cookie(c fiber.Ctx, token string, expires time.Time) {
-	c.Cookie(&fiber.Cookie{Name: "tamak_refresh", Value: token, Path: "/api/auth", HTTPOnly: true, Secure: s.Config.Env == "production", SameSite: "Strict", Expires: expires})
+	sameSite := "Lax"
+	secure := false
+	if s.Config.Env == "production" {
+		sameSite = "None"
+		secure = true
+	}
+	c.Cookie(&fiber.Cookie{
+		Name:     "tamak_refresh",
+		Value:    token,
+		Path:     "/api/auth",
+		HTTPOnly: true,
+		Secure:   secure,
+		SameSite: sameSite,
+		Expires:  expires,
+	})
 }
 func (s *Server) session(ctx context.Context, u models.User, raw string) error {
 	_, e := s.DB.Collection("refresh_sessions").InsertOne(ctx, bson.M{"_id": bson.NewObjectID(), "userId": u.ID, "version": u.Version, "tokenHash": s.refreshHash(raw), "expiresAt": time.Now().Add(7 * 24 * time.Hour)})
