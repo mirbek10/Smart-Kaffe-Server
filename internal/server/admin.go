@@ -350,13 +350,45 @@ func validImage(v string) bool {
 	u, e := url.Parse(v)
 	return e == nil && u.Scheme == "https" && u.Host != "" && u.User == nil
 }
+func (s *Server) baseFrontendURL(c fiber.Ctx) string {
+	if c != nil {
+		if origin := c.Get("Origin"); origin != "" && s.isAllowedOrigin(origin) {
+			return strings.TrimRight(strings.TrimSpace(origin), "/")
+		}
+		if referer := c.Get("Referer"); referer != "" {
+			if ru, err := url.Parse(referer); err == nil && ru.Scheme != "" && ru.Host != "" {
+				refOrigin := ru.Scheme + "://" + ru.Host
+				if s.isAllowedOrigin(refOrigin) {
+					return refOrigin
+				}
+			}
+		}
+	}
+	targets := strings.Split(s.Config.FrontendURL, ",")
+	if s.Config.Env == "production" {
+		for _, target := range targets {
+			t := strings.TrimRight(strings.TrimSpace(target), "/")
+			if strings.HasPrefix(t, "https://") {
+				return t
+			}
+		}
+		return "https://smart-kaffe.vercel.app"
+	}
+	for _, target := range targets {
+		t := strings.TrimRight(strings.TrimSpace(target), "/")
+		if t != "" {
+			return t
+		}
+	}
+	return "http://localhost:5173"
+}
 func (s *Server) rotateQR(c fiber.Ctx) error {
 	id, e := oid(c.Params("id"))
 	if e != nil {
 		return e
 	}
 	token := security.SignTable(id.Hex(), s.Config.TableSecret)
-	qrURL := strings.TrimSpace(strings.Split(s.Config.FrontendURL, ",")[0]) + "/menu/table/" + token
+	qrURL := s.baseFrontendURL(c) + "/menu/table/" + token
 	encrypted, e := security.EncryptQR(qrURL, id.Hex(), s.Config.TableSecret)
 	if e != nil {
 		return e
@@ -400,7 +432,8 @@ func (s *Server) getQR(c fiber.Ctx) error {
 	if security.Hash(token) != table.TokenHash {
 		return fail(409, "qr_changed", "QR-код был заменён. Обновите страницу.")
 	}
-	return c.JSON(fiber.Map{"tableToken": token, "url": raw})
+	currentURL := s.baseFrontendURL(c) + "/menu/table/" + token
+	return c.JSON(fiber.Map{"tableToken": token, "url": currentURL})
 }
 
 func (s *Server) qrToken(raw string, id bson.ObjectID) (string, error) {
@@ -432,7 +465,8 @@ func (s *Server) restoreQR(c fiber.Ctx) error {
 	if e != nil {
 		return e
 	}
-	encrypted, e := security.EncryptQR(input.URL, id.Hex(), s.Config.TableSecret)
+	qrURL := s.baseFrontendURL(c) + "/menu/table/" + token
+	encrypted, e := security.EncryptQR(qrURL, id.Hex(), s.Config.TableSecret)
 	if e != nil {
 		return e
 	}
@@ -449,7 +483,7 @@ func (s *Server) restoreQR(c fiber.Ctx) error {
 	if e != nil {
 		return e
 	}
-	return c.JSON(fiber.Map{"tableToken": token, "url": input.URL})
+	return c.JSON(fiber.Map{"tableToken": token, "url": qrURL})
 }
 func (s *Server) auditList(c fiber.Ctx) error {
 	v, e := list[models.Audit](c.Context(), s.DB, "audit_logs", bson.M{}, page(c))
